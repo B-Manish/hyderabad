@@ -206,3 +206,92 @@ export const STATUS_LABELS: Record<IssueStatus, string> = {
     rejected: 'Rejected',
     duplicate: 'Duplicate',
 };
+
+// --- Phase 3: Authority & Jurisdiction Types ---
+
+export type AuthorityType = 'municipal' | 'planning' | 'highway' | 'state' | 'ward_level' | 'contractor' | 'other';
+export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'very_low';
+
+export interface AuthorityWithConfidence {
+    id: string | null;
+    name: string;
+    authority_type: AuthorityType | null;
+    confidence: number;
+    website_url?: string | null;
+    grievance_url?: string | null;
+    contact_phone?: string | null;
+    contact_email?: string | null;
+}
+
+export interface AreaInfo {
+    id?: string;
+    name: string;
+    code?: string | null;
+}
+
+export interface NearestRoad {
+    id?: string;
+    name: string | null;
+    road_class?: string | null;
+    distance_meters?: number | null;
+}
+
+export interface AccountabilityChainNode {
+    type: string;
+    title: string | null;
+    display_name: string;
+    phone?: string | null;
+    email?: string | null;
+    is_public: boolean;
+}
+
+export interface AuthorityLookupResponse {
+    primary_authority: AuthorityWithConfidence | null;
+    alternate_authorities: AuthorityWithConfidence[];
+    ward: AreaInfo | null;
+    circle: AreaInfo | null;
+    zone: AreaInfo | null;
+    nearest_road: NearestRoad | null;
+    accountability_chain: AccountabilityChainNode[];
+    confidence_level: ConfidenceLevel;
+    resolution_metadata: {
+        steps_matched: string[];
+        data_version: string;
+    };
+}
+
+export interface ReverseGeocodeResponse {
+    ward: AreaInfo | null;
+    zone: AreaInfo | null;
+    circle: AreaInfo | null;
+    nearest_road: NearestRoad | null;
+    locality_hint: string | null;
+}
+
+export interface IssueDetailWithAuthority extends IssueDetail {
+    authority: AuthorityLookupResponse | null;
+}
+
+export const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
+    high: 'High confidence',
+    medium: 'Medium confidence',
+    low: 'Low confidence — may need verification',
+    very_low: 'Unable to determine with certainty',
+};
+
+export const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {
+    high: 'bg-green-100 text-green-700',
+    medium: 'bg-yellow-100 text-yellow-700',
+    low: 'bg-orange-100 text-orange-700',
+    very_low: 'bg-red-100 text-red-700',
+};
+
+export const NODE_TYPE_LABELS: Record<string, string> = {
+    field_officer: 'Field Officer',
+    engineer: 'Engineer',
+    circle_office: 'Circle Office',
+    zonal_office: 'Zonal Office',
+    elected_rep: 'Elected Representative',
+    escalation: 'Escalation',
+    grievance_channel: 'Grievance Channel',
+};

@@ -1,12 +1,15 @@
 import type {
     PaginatedIssues,
     IssueDetail,
+    IssueDetailWithAuthority,
     ReportCreateRequest,
     ReportCreateResponse,
     ReportResponse,
     SignedUploadResponse,
     MapViewportResponse,
     DuplicateCheckResponse,
+    AuthorityLookupResponse,
+    ReverseGeocodeResponse,
     IssueType,
 } from '../types';
 
@@ -81,7 +84,7 @@ export async function getIssues(params: {
     return apiFetch(`/issues${query ? `?${query}` : ''}`);
 }
 
-export async function getIssue(issueId: string): Promise<IssueDetail> {
+export async function getIssue(issueId: string): Promise<IssueDetailWithAuthority> {
     return apiFetch(`/issues/${issueId}`);
 }
 
@@ -124,4 +127,17 @@ export async function checkDuplicates(
     searchParams.set('issue_type', issueType);
     if (radius) searchParams.set('radius', String(radius));
     return apiFetch(`/map/duplicates?${searchParams.toString()}`);
+}
+
+// Authority & Jurisdiction
+export async function lookupAuthority(lat: number, lng: number): Promise<AuthorityLookupResponse> {
+    return apiFetch(`/lookup/authority?lat=${lat}&lng=${lng}`);
+}
+
+export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResponse> {
+    return apiFetch(`/lookup/reverse-geocode?lat=${lat}&lng=${lng}`);
+}
+
+export async function getJurisdictionPolygons(layerType: string = 'ward'): Promise<GeoJSON.FeatureCollection> {
+    return apiFetch(`/admin/jurisdictions/polygons?layer_type=${layerType}`);
 }

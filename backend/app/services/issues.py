@@ -232,6 +232,20 @@ async def create_issue_from_report(
     db.add(history)
 
     await db.flush()
+
+    # Phase 3: Resolve authority for this issue's location
+    try:
+        from app.services.authority import resolve_authority
+        auth_result = await resolve_authority(db, float(report.latitude), float(report.longitude))
+        if auth_result.get("primary_authority") and auth_result["primary_authority"].get("id"):
+            issue.resolved_authority_id = auth_result["primary_authority"]["id"]
+            issue.authority_confidence = auth_result["primary_authority"].get("confidence", 0)
+        if auth_result.get("ward") and auth_result["ward"].get("id"):
+            issue.resolved_ward_id = auth_result["ward"]["id"]
+        await db.flush()
+    except Exception:
+        pass  # Authority resolution is best-effort
+
     return issue
 
 

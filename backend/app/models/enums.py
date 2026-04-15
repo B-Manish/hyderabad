@@ -57,3 +57,40 @@ class ReportSource(str, enum.Enum):
     web = "web"
     mobile_web = "mobile-web"
     admin = "admin"
+
+
+class AuthorityType(str, enum.Enum):
+    municipal = "municipal"
+    planning = "planning"
+    highway = "highway"
+    state = "state"
+    ward_level = "ward_level"
+    contractor = "contractor"
+    other = "other"
+
+
+class LayerType(str, enum.Enum):
+    ward = "ward"
+    circle = "circle"
+    zone = "zone"
+    municipality = "municipality"
+    constituency = "constituency"
+    special_road_zone = "special_road_zone"
+    other = "other"
+
+
+class AccountabilityNodeType(str, enum.Enum):
+    field_officer = "field_officer"
+    engineer = "engineer"
+    circle_office = "circle_office"
+    zonal_office = "zonal_office"
+    elected_rep = "elected_rep"
+    escalation = "escalation"
+    grievance_channel = "grievance_channel"
+
+
+class ConfidenceLevel(str, enum.Enum):
+    high = "high"
+    medium = "medium"
+    low = "low"
+    very_low = "very_low"

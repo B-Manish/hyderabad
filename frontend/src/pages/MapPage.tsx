@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
-import { getMapIssues } from '../services/api';
+import { getMapIssues, getJurisdictionPolygons } from '../services/api';
 import { SeverityBadge, StatusBadge } from '../components/Badges';
 import {
     ISSUE_TYPE_LABELS,
@@ -169,6 +169,57 @@ function MarkerClusterGroup({ issues, onIssueClick }: { issues: MapIssue[]; onIs
     return null;
 }
 
+// Ward boundary overlay component
+function WardBoundaryOverlay({ visible }: { visible: boolean }) {
+    const map = useMap();
+    const layerRef = useRef<L.GeoJSON | null>(null);
+
+    const { data: wardGeoJson } = useQuery({
+        queryKey: ['wardBoundaries'],
+        queryFn: () => getJurisdictionPolygons('ward'),
+        enabled: visible,
+        staleTime: 5 * 60 * 1000, // 5 min cache
+    });
+
+    useEffect(() => {
+        if (layerRef.current) {
+            map.removeLayer(layerRef.current);
+            layerRef.current = null;
+        }
+
+        if (visible && wardGeoJson && wardGeoJson.features?.length > 0) {
+            const layer = L.geoJSON(wardGeoJson as any, {
+                style: {
+                    color: '#6366f1',
+                    weight: 2,
+                    opacity: 0.6,
+                    fillColor: '#6366f1',
+                    fillOpacity: 0.08,
+                },
+                onEachFeature: (feature, layer) => {
+                    if (feature.properties?.name) {
+                        layer.bindTooltip(feature.properties.name, {
+                            permanent: false,
+                            direction: 'center',
+                            className: 'text-xs bg-white/90 border-indigo-300',
+                        });
+                    }
+                },
+            });
+            layer.addTo(map);
+            layerRef.current = layer;
+        }
+
+        return () => {
+            if (layerRef.current) {
+                map.removeLayer(layerRef.current);
+            }
+        };
+    }, [visible, wardGeoJson, map]);
+
+    return null;
+}
+
 export default function MapPage() {
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -183,6 +234,7 @@ export default function MapPage() {
     const [filterDateTo, setFilterDateTo] = useState(searchParams.get('date_to') || '');
     const [filterVerified, setFilterVerified] = useState(searchParams.get('verified_only') === 'true');
     const [showFilters, setShowFilters] = useState(false);
+    const [showWardBoundaries, setShowWardBoundaries] = useState(false);
 
     // Map bounds
     const [bounds, setBounds] = useState<{
@@ -258,6 +310,17 @@ export default function MapPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Filter toggle */}
+                    <button
+                        onClick={() => setShowWardBoundaries(!showWardBoundaries)}
+                        className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                            showWardBoundaries
+                                ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                                : 'border-gray-300 hover:bg-gray-50'
+                        }`}
+                        title="Toggle ward boundary overlay"
+                    >
+                        🏛️ Wards
+                    </button>
                     <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
@@ -394,6 +457,7 @@ export default function MapPage() {
                                 issues={issues}
                                 onIssueClick={setSelectedIssue}
                             />
+                            <WardBoundaryOverlay visible={showWardBoundaries} />
                         </MapContainer>
 
                         {/* Report here floating button */}

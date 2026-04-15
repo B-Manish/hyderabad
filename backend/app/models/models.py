@@ -8,9 +8,12 @@ from sqlalchemy.dialects.postgresql import UUID
 from geoalchemy2 import Geography
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from sqlalchemy.dialects.postgresql import ARRAY
+from geoalchemy2 import Geometry
 from app.models.enums import (
     UserRole, IssueType, Severity, ModerationStatus,
     IssueStatus, MediaType, ReportSource,
+    AuthorityType, LayerType, AccountabilityNodeType,
 )
 
 
@@ -107,6 +110,9 @@ class Issue(Base):
     verification_score = Column(Numeric(5, 4), default=0)
     is_verified = Column(Boolean, default=False)
     public_visibility = Column(Boolean, default=True)
+    resolved_authority_id = Column(UUID(as_uuid=True), ForeignKey("authorities.id"), nullable=True)
+    resolved_ward_id = Column(UUID(as_uuid=True), ForeignKey("jurisdiction_polygons.id"), nullable=True)
+    authority_confidence = Column(Numeric(5, 4), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -114,6 +120,8 @@ class Issue(Base):
     primary_report = relationship("Report", foreign_keys=[primary_report_id], uselist=False)
     issue_reports = relationship("IssueReport", back_populates="issue")
     status_history = relationship("IssueStatusHistory", back_populates="issue")
+    resolved_authority = relationship("Authority", foreign_keys=[resolved_authority_id])
+    resolved_ward = relationship("JurisdictionPolygon", foreign_keys=[resolved_ward_id])
 
     __table_args__ = (
         Index("idx_issues_geom", geom, postgresql_using="gist"),
@@ -144,3 +152,108 @@ class IssueStatusHistory(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     issue = relationship("Issue", back_populates="status_history")
+
+
+class Authority(Base):
+    __tablename__ = "authorities"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    authority_type = Column(Enum(AuthorityType), nullable=False)
+    parent_authority_id = Column(UUID(as_uuid=True), ForeignKey("authorities.id"), nullable=True)
+    description = Column(Text, nullable=True)
+    website_url = Column(String(512), nullable=True)
+    grievance_url = Column(String(512), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    parent = relationship("Authority", remote_side="Authority.id", backref="children")
+    jurisdiction_polygons = relationship("JurisdictionPolygon", back_populates="authority")
+    accountability_nodes = relationship("AccountabilityChainNode", back_populates="authority")
+
+
+class JurisdictionPolygon(Base):
+    __tablename__ = "jurisdiction_polygons"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    authority_id = Column(UUID(as_uuid=True), ForeignKey("authorities.id"), nullable=True)
+    layer_type = Column(Enum(LayerType), nullable=False)
+    name = Column(String(255), nullable=False)
+    code = Column(String(50), nullable=True)
+    geom = Column(Geometry("MULTIPOLYGON", srid=4326), nullable=False)
+    source_name = Column(String(255), nullable=True)
+    source_version = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    authority = relationship("Authority", back_populates="jurisdiction_polygons")
+    responsibility_mappings = relationship("ResponsibilityMapping", back_populates="polygon")
+    accountability_nodes = relationship("AccountabilityChainNode", back_populates="jurisdiction_polygon")
+
+    __table_args__ = (
+        Index("idx_jurisdiction_polygons_geom", geom, postgresql_using="gist"),
+    )
+
+
+class RoadSegment(Base):
+    __tablename__ = "road_segments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=True)
+    alt_names = Column(ARRAY(Text), nullable=True)
+    road_class = Column(String(50), nullable=True)
+    osm_way_id = Column(BigInteger, nullable=True)
+    geom = Column(Geometry("MULTILINESTRING", srid=4326), nullable=False)
+    source_name = Column(String(255), nullable=True)
+    source_version = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    responsibility_mappings = relationship("ResponsibilityMapping", back_populates="road_segment")
+
+    __table_args__ = (
+        Index("idx_road_segments_geom", geom, postgresql_using="gist"),
+    )
+
+
+class ResponsibilityMapping(Base):
+    __tablename__ = "responsibility_mappings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    polygon_id = Column(UUID(as_uuid=True), ForeignKey("jurisdiction_polygons.id"), nullable=True)
+    road_segment_id = Column(UUID(as_uuid=True), ForeignKey("road_segments.id"), nullable=True)
+    primary_authority_id = Column(UUID(as_uuid=True), ForeignKey("authorities.id"), nullable=False)
+    secondary_authority_id = Column(UUID(as_uuid=True), ForeignKey("authorities.id"), nullable=True)
+    ownership_confidence = Column(Numeric(5, 4), default=0, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    polygon = relationship("JurisdictionPolygon", back_populates="responsibility_mappings")
+    road_segment = relationship("RoadSegment", back_populates="responsibility_mappings")
+    primary_authority = relationship("Authority", foreign_keys=[primary_authority_id])
+    secondary_authority = relationship("Authority", foreign_keys=[secondary_authority_id])
+
+
+class AccountabilityChainNode(Base):
+    __tablename__ = "accountability_chain_nodes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    authority_id = Column(UUID(as_uuid=True), ForeignKey("authorities.id"), nullable=False)
+    jurisdiction_polygon_id = Column(UUID(as_uuid=True), ForeignKey("jurisdiction_polygons.id"), nullable=True)
+    node_type = Column(Enum(AccountabilityNodeType), nullable=False)
+    display_name = Column(String(255), nullable=False)
+    title = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    email = Column(String(255), nullable=True)
+    display_order = Column(Integer, default=0, nullable=False)
+    is_public = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    authority = relationship("Authority", back_populates="accountability_nodes")
+    jurisdiction_polygon = relationship("JurisdictionPolygon", back_populates="accountability_nodes")

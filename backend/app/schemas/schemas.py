@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 from app.models.enums import (
     IssueType, Severity, ModerationStatus, IssueStatus, MediaType, ReportSource,
+    AuthorityType, LayerType, AccountabilityNodeType,
 )
 import re
 
@@ -161,3 +162,111 @@ class PaginatedIssuesResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+# --- Authority & Jurisdiction ---
+class AuthorityResponse(BaseModel):
+    id: UUID
+    name: str
+    authority_type: AuthorityType
+    description: str | None = None
+    website_url: str | None = None
+    grievance_url: str | None = None
+    contact_phone: str | None = None
+    contact_email: str | None = None
+    is_active: bool = True
+
+    model_config = {"from_attributes": True}
+
+
+class AccountabilityChainNodeResponse(BaseModel):
+    type: str
+    title: str | None = None
+    display_name: str
+    phone: str | None = None
+    email: str | None = None
+    is_public: bool = True
+
+
+class AreaInfoResponse(BaseModel):
+    id: str | None = None
+    name: str
+    code: str | None = None
+
+
+class NearestRoadResponse(BaseModel):
+    id: str | None = None
+    name: str | None = None
+    road_class: str | None = None
+    distance_meters: float | None = None
+
+
+class AuthorityWithConfidence(BaseModel):
+    id: str | None = None
+    name: str
+    authority_type: str | None = None
+    confidence: float = 0.0
+    website_url: str | None = None
+    grievance_url: str | None = None
+    contact_phone: str | None = None
+    contact_email: str | None = None
+
+
+class ResolutionMetadata(BaseModel):
+    steps_matched: list[str] = []
+    data_version: str = "2026-04"
+
+
+class AuthorityLookupResponse(BaseModel):
+    primary_authority: AuthorityWithConfidence | None = None
+    alternate_authorities: list[AuthorityWithConfidence] = []
+    ward: AreaInfoResponse | None = None
+    circle: AreaInfoResponse | None = None
+    zone: AreaInfoResponse | None = None
+    nearest_road: NearestRoadResponse | None = None
+    accountability_chain: list[AccountabilityChainNodeResponse] = []
+    confidence_level: str = "very_low"
+    resolution_metadata: ResolutionMetadata = ResolutionMetadata()
+
+
+class ReverseGeocodeResponse(BaseModel):
+    ward: AreaInfoResponse | None = None
+    zone: AreaInfoResponse | None = None
+    circle: AreaInfoResponse | None = None
+    nearest_road: NearestRoadResponse | None = None
+    locality_hint: str | None = None
+
+
+class JurisdictionImportResponse(BaseModel):
+    status: str
+    features_found: int = 0
+    imported: int = 0
+    errors: int = 0
+    error_details: list[str] = []
+
+
+class ResponsibilityMappingCreate(BaseModel):
+    polygon_id: UUID | None = None
+    road_segment_id: UUID | None = None
+    primary_authority_id: UUID
+    secondary_authority_id: UUID | None = None
+    ownership_confidence: float = Field(0.5, ge=0, le=1)
+    notes: str | None = None
+
+
+class ResponsibilityMappingResponse(BaseModel):
+    id: UUID
+    polygon_id: UUID | None = None
+    road_segment_id: UUID | None = None
+    primary_authority_id: UUID
+    secondary_authority_id: UUID | None = None
+    ownership_confidence: float
+    notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class IssueDetailWithAuthority(IssueDetailResponse):
+    authority: AuthorityLookupResponse | None = None

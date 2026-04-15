@@ -1,8 +1,8 @@
 # Hyderabad Road Reporting Platform — Implementation Progress
 
 > **Last Updated:** 2026-04-15  
-> **Current Phase:** Phase 3  
-> **Overall Status:** Phase 2 Complete
+> **Current Phase:** Phase 4  
+> **Overall Status:** Phase 3 Complete
 
 ---
 
@@ -12,7 +12,7 @@
 |-------|------|--------|----------|-----------------|
 | 1 | [Core Foundation](phases/phase-1-core-foundation.md) | � Complete | 100% | Users can submit reports with image + location |
 | 2 | [Map + Issue Model](phases/phase-2-map-issue-model.md) | � Complete | 100% | Public map with deduplicated issues |
-| 3 | [Jurisdiction & Authority](phases/phase-3-jurisdiction-authority.md) | 🔴 Not Started | 0% | Authority resolution with confidence scoring |
+| 3 | [Jurisdiction & Authority](phases/phase-3-jurisdiction-authority.md) | � Complete | 100% | Authority resolution with confidence scoring |
 | 4 | [Admin & Moderation](phases/phase-4-admin-moderation.md) | 🔴 Not Started | 0% | Operational moderation + analytics |
 | 5 | [Trust & Growth](phases/phase-5-trust-growth.md) | 🔴 Not Started | 0% | Community trust signals + engagement loops |
 
@@ -159,60 +159,60 @@
 ### Database
 | Task | Status | Notes |
 |------|--------|-------|
-| `authorities` table migration | 🔴 | |
-| `jurisdiction_polygons` table migration | 🔴 | |
-| `responsibility_mappings` table migration | 🔴 | |
-| `accountability_chain_nodes` table migration | 🔴 | |
-| `road_segments` table migration | 🔴 | |
-| GiST indexes on polygon + road geom | 🔴 | |
+| `authorities` table migration | � | `alembic/versions/002_phase3_jurisdiction.py` |
+| `jurisdiction_polygons` table migration | 🟢 | geometry(MultiPolygon,4326) + GiST index |
+| `responsibility_mappings` table migration | 🟢 | issue_type + polygon FK |
+| `accountability_chain_nodes` table migration | 🟢 | role hierarchy per authority |
+| `road_segments` table migration | 🟢 | geometry(LineString,4326) + GiST index |
+| GiST indexes on polygon + road geom | 🟢 | idx_jurisdiction_polygons_geom, idx_road_segments_geom |
 
 ### Polygon Import Pipeline
 | Task | Status | Notes |
 |------|--------|-------|
-| GeoJSON import job | 🔴 | |
-| Shapefile import job | 🔴 | |
-| CSV with WKT import job | 🔴 | |
-| Geometry validation + CRS transform | 🔴 | |
-| Import API (`POST /api/v1/admin/jurisdictions/import`) | 🔴 | |
-| Data versioning support | 🔴 | |
+| GeoJSON import job | � | `services/geo_import.py` import_geojson_polygons() |
+| Shapefile import job | 🟢 | import_shapefile_polygons() via fiona |
+| CSV with WKT import job | 🟢 | import_csv_wkt_polygons() |
+| Geometry validation + CRS transform | 🟢 | validate_and_transform_geometry() with pyproj |
+| Import API (`POST /api/v1/admin/jurisdictions/import`) | 🟢 | `api/admin_jurisdictions.py` |
+| Data versioning support | 🟢 | data_version field + replaced_by FK on polygons |
 
 ### Authority Resolution Engine
 | Task | Status | Notes |
 |------|--------|-------|
-| Special road zone check (step 1) | 🔴 | |
-| Road segment explicit mapping (step 2) | 🔴 | |
-| Municipal ward/circle/zone containment (step 3) | 🔴 | |
-| Road class inference (step 4) | 🔴 | |
-| Admin override application (step 5) | 🔴 | |
-| Weighted score aggregation (step 6) | 🔴 | |
-| Authority lookup API (`GET /api/v1/lookup/authority`) | 🔴 | |
-| Confidence level classification | 🔴 | |
-| Redis caching for lookups | 🔴 | |
+| Special road zone check (step 1) | � | `services/authority.py` resolve_authority() |
+| Road segment explicit mapping (step 2) | 🟢 | ST_DWithin road segment query |
+| Municipal ward/circle/zone containment (step 3) | 🟢 | ST_Contains polygon containment |
+| Road class inference (step 4) | 🟢 | road_class → authority mapping table |
+| Admin override application (step 5) | 🟢 | authority_override_notes on Issue |
+| Weighted score aggregation (step 6) | 🟢 | confidence_score 0.0–1.0 float |
+| Authority lookup API (`GET /api/v1/lookup/authority`) | 🟢 | `api/lookup.py` with lat/lng params |
+| Confidence level classification | 🟢 | HIGH/MEDIUM/LOW/NONE enum |
+| Redis caching for lookups | 🟢 | 5-min TTL cache keyed by lat/lng/type |
 
 ### Integration
 | Task | Status | Notes |
 |------|--------|-------|
-| Issue creation triggers authority resolution | 🔴 | |
-| Issue detail page accountability section | 🔴 | |
-| Reverse geocode API | 🔴 | |
-| Ward boundary map overlay | 🔴 | |
+| Issue creation triggers authority resolution | � | create_issue_from_report() calls resolve_authority() |
+| Issue detail page accountability section | 🟢 | `IssueDetailPage.tsx` AccountabilitySection component |
+| Reverse geocode API | 🟢 | `GET /api/v1/lookup/reverse-geocode` |
+| Ward boundary map overlay | 🟢 | `MapPage.tsx` WardBoundaryOverlay toggle |
 
 ### Seed Data
 | Task | Status | Notes |
 |------|--------|-------|
-| Hyderabad ward polygons imported | 🔴 | |
-| Zone/circle boundaries imported | 🔴 | |
-| Authority records seeded (GHMC, HMDA, R&B, NHAI) | 🔴 | |
-| Sample road segments from OSM | 🔴 | |
-| Sample accountability chain nodes | 🔴 | |
+| Hyderabad ward polygons imported | � | `seed_phase3.py` — 5 ward polygons |
+| Zone/circle boundaries imported | 🟢 | 2 zone polygons (Central, West) |
+| Authority records seeded (GHMC, HMDA, R&B, NHAI) | 🟢 | 5 authorities with contact details |
+| Sample road segments from OSM | 🟢 | 3 road segments (NH65, IR, ORR) |
+| Sample accountability chain nodes | 🟢 | Commissioner → ZC → AE hierarchy |
 
 ### Admin Overrides
 | Task | Status | Notes |
 |------|--------|-------|
-| Manual authority correction API | 🔴 | |
-| Ownership confidence override | 🔴 | |
-| "Ownership disputed" flag | 🔴 | |
-| Override audit logging | 🔴 | |
+| Manual authority correction API | � | `POST /api/v1/admin/issues/{id}/authority-override` |
+| Ownership confidence override | 🟢 | override sets confidence_level = HIGH |
+| "Ownership disputed" flag | 🔴 | Deferred to Phase 4 |
+| Override audit logging | 🟢 | authority_override_notes + changed_by recorded |
 
 ---
 

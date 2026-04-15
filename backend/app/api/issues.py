@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.schemas.schemas import (
     IssueListItem, IssueDetailResponse, PaginatedIssuesResponse, MediaResponse,
+    IssueDetailWithAuthority,
 )
 from app.services.reports import get_issues_paginated, get_issue_by_id
 from app.services.storage import get_public_url
+from app.services.authority import resolve_authority
 from app.models.enums import IssueType, Severity, IssueStatus
 
 router = APIRouter(prefix="/issues", tags=["issues"])
@@ -54,7 +56,7 @@ async def list_issues(
     )
 
 
-@router.get("/{issue_id}", response_model=IssueDetailResponse)
+@router.get("/{issue_id}", response_model=IssueDetailWithAuthority)
 async def get_issue(
     issue_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -80,7 +82,7 @@ async def get_issue(
                 url=get_public_url(m.storage_key),
             ))
 
-    return IssueDetailResponse(
+    return IssueDetailWithAuthority(
         id=issue.id,
         title=issue.title,
         canonical_issue_type=issue.canonical_issue_type,
@@ -98,4 +100,5 @@ async def get_issue(
         public_visibility=issue.public_visibility,
         created_at=issue.created_at,
         media=media_list,
+        authority=await resolve_authority(db, float(issue.latitude), float(issue.longitude)),
     )
