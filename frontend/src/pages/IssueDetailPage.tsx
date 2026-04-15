@@ -1,5 +1,8 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { getIssue } from '../services/api';
 import { SeverityBadge, StatusBadge } from '../components/Badges';
 import { ISSUE_TYPE_LABELS } from '../types';
@@ -95,15 +98,38 @@ export default function IssueDetailPage() {
         {/* Location */}
         <div className="bg-white rounded-lg border p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Location</h2>
-          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-3">
-            <div className="text-center text-gray-400">
-              <p className="text-sm">📍 {issue.latitude.toFixed(5)}, {issue.longitude.toFixed(5)}</p>
-              <p className="text-xs mt-1">Interactive map coming in Phase 2</p>
-            </div>
+          <div className="aspect-video rounded-lg overflow-hidden mb-3">
+            <MapContainer
+              center={[issue.latitude, issue.longitude]}
+              zoom={16}
+              className="h-full w-full"
+              style={{ height: '100%', minHeight: '200px' }}
+              scrollWheelZoom={false}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker
+                position={[issue.latitude, issue.longitude]}
+                icon={L.divIcon({
+                  className: 'custom-marker',
+                  html: `<div style="width:24px;height:24px;border-radius:50%;background:#ef4444;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+                  iconSize: [24, 24],
+                  iconAnchor: [12, 12],
+                })}
+              />
+            </MapContainer>
           </div>
           <p className="text-xs text-gray-500">
             Coordinates: {issue.latitude.toFixed(5)}, {issue.longitude.toFixed(5)}
           </p>
+          <Link
+            to={`/map?lat=${issue.latitude}&lng=${issue.longitude}`}
+            className="inline-block mt-2 text-xs text-primary-600 hover:underline"
+          >
+            View on full map →
+          </Link>
         </div>
       </div>
 

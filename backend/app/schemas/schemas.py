@@ -49,6 +49,7 @@ class ReportCreateRequest(BaseModel):
     worse_in_rain: bool = False
     worse_at_night: bool = False
     media_keys: list[str] = Field(..., min_length=1, max_length=5)
+    existing_issue_id: str | None = Field(None, description="Link to existing issue (duplicate)")
 
     @field_validator("description", "landmark", "road_name_input", "direction_of_travel")
     @classmethod

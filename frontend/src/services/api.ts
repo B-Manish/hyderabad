@@ -5,6 +5,9 @@ import type {
     ReportCreateResponse,
     ReportResponse,
     SignedUploadResponse,
+    MapViewportResponse,
+    DuplicateCheckResponse,
+    IssueType,
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -80,4 +83,45 @@ export async function getIssues(params: {
 
 export async function getIssue(issueId: string): Promise<IssueDetail> {
     return apiFetch(`/issues/${issueId}`);
+}
+
+// Map
+export async function getMapIssues(params: {
+    minLat: number;
+    minLng: number;
+    maxLat: number;
+    maxLng: number;
+    status?: string;
+    severity?: string;
+    issue_type?: string;
+    verified_only?: boolean;
+    date_from?: string;
+    date_to?: string;
+}): Promise<MapViewportResponse> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('minLat', String(params.minLat));
+    searchParams.set('minLng', String(params.minLng));
+    searchParams.set('maxLat', String(params.maxLat));
+    searchParams.set('maxLng', String(params.maxLng));
+    if (params.status) searchParams.set('status', params.status);
+    if (params.severity) searchParams.set('severity', params.severity);
+    if (params.issue_type) searchParams.set('issue_type', params.issue_type);
+    if (params.verified_only) searchParams.set('verified_only', 'true');
+    if (params.date_from) searchParams.set('date_from', params.date_from);
+    if (params.date_to) searchParams.set('date_to', params.date_to);
+    return apiFetch(`/map/issues?${searchParams.toString()}`);
+}
+
+export async function checkDuplicates(
+    lat: number,
+    lng: number,
+    issueType: IssueType,
+    radius?: number,
+): Promise<DuplicateCheckResponse> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('lat', String(lat));
+    searchParams.set('lng', String(lng));
+    searchParams.set('issue_type', issueType);
+    if (radius) searchParams.set('radius', String(radius));
+    return apiFetch(`/map/duplicates?${searchParams.toString()}`);
 }

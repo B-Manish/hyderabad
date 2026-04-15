@@ -10,29 +10,16 @@ from app.models.enums import (
 )
 from app.schemas.schemas import ReportCreateRequest
 from app.services.storage import get_public_url
+from app.services.issues import create_issue_from_report, link_report_to_existing_issue
+from app.services.cache import invalidate_map_cache
 from datetime import datetime, timezone
-
-
-ISSUE_TYPE_LABELS = {
-    IssueType.pothole: "Pothole",
-    IssueType.road_surface_broken: "Broken Road Surface",
-    IssueType.uneven_resurfacing: "Uneven Resurfacing",
-    IssueType.waterlogging: "Waterlogging",
-    IssueType.open_manhole: "Open Manhole",
-    IssueType.dangerous_speed_breaker: "Dangerous Speed Breaker",
-    IssueType.loose_gravel_debris: "Loose Gravel / Debris",
-    IssueType.construction_spill: "Construction Spill",
-    IssueType.missing_lane_markings: "Missing Lane Markings",
-    IssueType.road_shoulder_collapse: "Road Shoulder Collapse",
-    IssueType.road_cave_in: "Road Cave-in",
-    IssueType.other_road_safety: "Other Road Safety Issue",
-}
 
 
 async def create_report(
     db: AsyncSession,
     data: ReportCreateRequest,
     user_id: uuid.UUID | None = None,
+    existing_issue_id: uuid.UUID | None = None,
 ) -> Report:
     geom = ST_SetSRID(ST_MakePoint(float(data.longitude), float(data.latitude)), 4326)
 
@@ -74,50 +61,18 @@ async def create_report(
 
     await db.flush()
 
-    # Create an Issue from this report (Phase 1: 1 report = 1 issue, dedupe in Phase 2)
-    title_label = ISSUE_TYPE_LABELS.get(data.issue_type, "Road Issue")
-    location_hint = data.landmark or data.road_name_input or f"{data.latitude:.4f}, {data.longitude:.4f}"
-    title = f"{title_label} near {location_hint}"
-
-    issue = Issue(
-        id=uuid.uuid4(),
-        primary_report_id=report.id,
-        title=title,
-        canonical_issue_type=data.issue_type,
-        canonical_severity=data.severity,
-        status=IssueStatus.reported,
-        latitude=data.latitude,
-        longitude=data.longitude,
-        geom=geom,
-        first_reported_at=report.submitted_at,
-        latest_reported_at=report.submitted_at,
-        report_count=1,
-        support_count=0,
-    )
-    db.add(issue)
-    await db.flush()
-
-    # Link report to issue
-    report.issue_id = issue.id
-    ir = IssueReport(
-        issue_id=issue.id,
-        report_id=report.id,
-        link_reason="initial_report",
-    )
-    db.add(ir)
-
-    # Log status history
-    history = IssueStatusHistory(
-        id=uuid.uuid4(),
-        issue_id=issue.id,
-        old_status=None,
-        new_status=IssueStatus.reported.value,
-        changed_by_user_id=user_id,
-        change_reason="Initial report submitted",
-    )
-    db.add(history)
+    # Phase 2: If user selected an existing issue (duplicate), link to it.
+    # Otherwise, create a new issue.
+    if existing_issue_id:
+        await link_report_to_existing_issue(db, report, existing_issue_id, user_id)
+    else:
+        await create_issue_from_report(db, report, user_id)
 
     await db.flush()
+
+    # Invalidate map cache since data changed
+    await invalidate_map_cache()
+
     return report
 
 

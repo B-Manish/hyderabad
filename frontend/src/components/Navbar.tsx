@@ -21,6 +21,7 @@ export default function Navbar() {
           </div>
           <div className="flex items-center space-x-2">
             <Link to="/" className={linkClass('/')}>Home</Link>
+            <Link to="/map" className={linkClass('/map')}>Map</Link>
             <Link to="/issues" className={linkClass('/issues')}>Issues</Link>
             <Link to="/report" className={linkClass('/report')}>
               <span className="flex items-center space-x-1">

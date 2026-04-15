@@ -125,12 +125,46 @@ export interface ReportCreateRequest {
     worse_in_rain: boolean;
     worse_at_night: boolean;
     media_keys: string[];
+    existing_issue_id?: string;
 }
 
 export interface ReportCreateResponse {
     id: string;
     moderation_status: ModerationStatus;
     created_at: string;
+}
+
+export interface MapIssue {
+    id: string;
+    title: string;
+    canonical_issue_type: IssueType;
+    canonical_severity: Severity;
+    status: IssueStatus;
+    latitude: number;
+    longitude: number;
+    report_count: number;
+    support_count: number;
+    is_verified: boolean;
+    first_reported_at: string;
+    latest_reported_at: string;
+    distance_meters?: number;
+}
+
+export interface MapViewportResponse {
+    issues: MapIssue[];
+    total_count: number;
+    viewport_bounds: {
+        minLat: number;
+        maxLat: number;
+        minLng: number;
+        maxLng: number;
+    };
+}
+
+export interface DuplicateCheckResponse {
+    duplicates: MapIssue[];
+    count: number;
+    search_radius_meters: number;
 }
 
 export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {

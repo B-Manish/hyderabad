@@ -34,6 +34,10 @@ def generate_presigned_upload_url(storage_key: str, content_type: str) -> str:
         },
         ExpiresIn=settings.S3_PRESIGNED_EXPIRY,
     )
+    # boto3 embeds the internal endpoint hostname; replace with the public one
+    # so the browser can reach MinIO directly (e.g. minio:9000 → localhost:9000)
+    if settings.S3_ENDPOINT_URL != settings.S3_PUBLIC_URL:
+        url = url.replace(settings.S3_ENDPOINT_URL, settings.S3_PUBLIC_URL, 1)
     return url
 
 

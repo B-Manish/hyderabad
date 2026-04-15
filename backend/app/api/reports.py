@@ -26,7 +26,8 @@ async def create_report_endpoint(
     user: User | None = Depends(get_current_user_optional),
 ):
     user_id = user.id if user else None
-    report = await create_report(db, data, user_id=user_id)
+    existing_issue_id = uuid.UUID(data.existing_issue_id) if data.existing_issue_id else None
+    report = await create_report(db, data, user_id=user_id, existing_issue_id=existing_issue_id)
     return ReportCreateResponse(
         id=report.id,
         moderation_status=report.moderation_status,

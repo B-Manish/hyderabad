@@ -1,8 +1,8 @@
 # Hyderabad Road Reporting Platform — Implementation Progress
 
 > **Last Updated:** 2026-04-15  
-> **Current Phase:** Phase 2  
-> **Overall Status:** Phase 1 Complete
+> **Current Phase:** Phase 3  
+> **Overall Status:** Phase 2 Complete
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Name | Status | Progress | Key Deliverable |
 |-------|------|--------|----------|-----------------|
 | 1 | [Core Foundation](phases/phase-1-core-foundation.md) | � Complete | 100% | Users can submit reports with image + location |
-| 2 | [Map + Issue Model](phases/phase-2-map-issue-model.md) | 🔴 Not Started | 0% | Public map with deduplicated issues |
+| 2 | [Map + Issue Model](phases/phase-2-map-issue-model.md) | � Complete | 100% | Public map with deduplicated issues |
 | 3 | [Jurisdiction & Authority](phases/phase-3-jurisdiction-authority.md) | 🔴 Not Started | 0% | Authority resolution with confidence scoring |
 | 4 | [Admin & Moderation](phases/phase-4-admin-moderation.md) | 🔴 Not Started | 0% | Operational moderation + analytics |
 | 5 | [Trust & Growth](phases/phase-5-trust-growth.md) | 🔴 Not Started | 0% | Community trust signals + engagement loops |
@@ -106,51 +106,51 @@
 ### Issue Entity Separation
 | Task | Status | Notes |
 |------|--------|-------|
-| Issue creation from report logic | 🔴 | |
-| Issue-report linking service | 🔴 | |
-| Auto-title generation | 🔴 | |
-| Canonical field aggregation | 🔴 | |
-| Verification score calculation | 🔴 | |
+| Issue creation from report logic | � | `services/issues.py` create_issue_from_report() |
+| Issue-report linking service | 🟢 | `services/issues.py` link_report_to_existing_issue() |
+| Auto-title generation | 🟢 | generate_issue_title() from type+landmark/road |
+| Canonical field aggregation | 🟢 | recalculate_issue_aggregates() — severity/type/count |
+| Verification score calculation | 🟢 | compute_verification_score() — report_count+unique_users+recency |
 
 ### Duplicate Detection
 | Task | Status | Notes |
 |------|--------|-------|
-| Spatial duplicate query (ST_DWithin) | 🔴 | |
-| Issue type compatibility matrix | 🔴 | |
-| Duplicate suggestion API | 🔴 | |
-| Frontend duplicate prompt UX | 🔴 | |
-| Link report to existing issue flow | 🔴 | |
+| Spatial duplicate query (ST_DWithin) | � | find_nearby_duplicates() with 30m default radius |
+| Issue type compatibility matrix | 🟢 | COMPATIBLE_TYPES dict in services/issues.py |
+| Duplicate suggestion API | 🟢 | `GET /api/v1/map/duplicates` with lat/lng/type/radius |
+| Frontend duplicate prompt UX | 🟢 | Step 6 in report wizard with nearby issue cards |
+| Link report to existing issue flow | 🟢 | existing_issue_id in ReportCreateRequest → link_report_to_existing_issue() |
 
 ### Map Viewport API
 | Task | Status | Notes |
 |------|--------|-------|
-| `GET /api/v1/map/issues` endpoint | 🔴 | |
-| PostGIS viewport query (ST_Intersects + envelope) | 🔴 | |
-| Filter support (type, severity, status, date) | 🔴 | |
-| Redis caching for viewport queries | 🔴 | |
-| Cache invalidation on issue updates | 🔴 | |
+| `GET /api/v1/map/issues` endpoint | � | `api/map.py` with viewport bounds params |
+| PostGIS viewport query (ST_Intersects + envelope) | 🟢 | ST_Intersects + ST_MakeEnvelope in get_map_issues() |
+| Filter support (type, severity, status, date) | 🟢 | issue_type, severity, status, date_from, date_to, verified |
+| Redis caching for viewport queries | 🟢 | `services/cache.py` with 60s TTL, key from bounds+filters |
+| Cache invalidation on issue updates | 🟢 | invalidate_map_cache() SCAN+DELETE all map:* keys |
 
 ### Frontend Map
 | Task | Status | Notes |
 |------|--------|-------|
-| Leaflet + OSM tile integration | 🔴 | |
-| Severity-based marker colors | 🔴 | |
-| Marker clustering (Leaflet.markercluster) | 🔴 | |
-| Marker click → issue summary popup | 🔴 | |
-| "Locate me" button | 🔴 | |
-| Filter panel (type, severity, status, date) | 🔴 | |
-| Map / list toggle (mobile) | 🔴 | |
-| "Report here" CTA | 🔴 | |
-| Shareable URL with filter state | 🔴 | |
+| Leaflet + OSM tile integration | � | MapPage.tsx with OSM tiles, center Hyderabad |
+| Severity-based marker colors | 🟢 | Green/yellow/orange/red custom markers |
+| Marker clustering (Leaflet.markercluster) | 🟢 | MarkerClusterGroup with worst-severity coloring |
+| Marker click → issue summary popup | 🟢 | Bottom sheet with issue summary + "View Details" |
+| "Locate me" button | 🟢 | LocateButton component with geolocation API |
+| Filter panel (type, severity, status, date) | 🟢 | Collapsible panel with type/severity/status/date/verified |
+| Map / list toggle (mobile) | 🟢 | Toggle between map view and card list view |
+| "Report here" CTA | 🟢 | Floating button → /report with coordinates |
+| Shareable URL with filter state | 🟢 | searchParams sync for all filters |
 
 ### Report Flow Enhancement
 | Task | Status | Notes |
 |------|--------|-------|
-| Multi-step report wizard (7 steps) | 🔴 | |
-| Draggable map pin for location | 🔴 | |
-| Issue type visual selector | 🔴 | |
-| Duplicate check step integration | 🔴 | |
-| Progress indicator | 🔴 | |
+| Multi-step report wizard (7 steps) | � | Upload→Location→Type→Severity→Details→DupCheck→Submit |
+| Draggable map pin for location | 🟢 | Leaflet map with draggable marker + click-to-set |
+| Issue type visual selector | 🟢 | Visual grid with emoji icons, 8 issue types |
+| Duplicate check step integration | 🟢 | Step 6 calls checkDuplicates API, shows nearby issues |
+| Progress indicator | 🟢 | Step labels + progress bar at top of wizard |
 
 ---
 

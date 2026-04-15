@@ -10,6 +10,7 @@ from app.api.uploads import router as uploads_router
 from app.api.reports import router as reports_router
 from app.api.issues import router as issues_router
 from app.api.auth import router as auth_router
+from app.api.map import router as map_router
 
 settings = get_settings()
 setup_logging(debug=settings.DEBUG)
@@ -54,6 +55,7 @@ app.include_router(uploads_router, prefix=settings.API_V1_PREFIX)
 app.include_router(reports_router, prefix=settings.API_V1_PREFIX)
 app.include_router(issues_router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
+app.include_router(map_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")
