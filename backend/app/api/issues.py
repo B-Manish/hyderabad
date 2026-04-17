@@ -1,14 +1,17 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.schemas.schemas import (
     IssueListItem, IssueDetailResponse, PaginatedIssuesResponse, MediaResponse,
-    IssueDetailWithAuthority,
+    IssueDetailWithAuthority, SupportCreateRequest, SupportResponse, SupportSummaryResponse,
 )
 from app.services.reports import get_issues_paginated, get_issue_by_id
 from app.services.storage import get_public_url
 from app.services.authority import resolve_authority
+from app.services.support import create_support, get_support_summary
+from app.auth.dependencies import get_current_user_optional
+from app.models.models import User
 from app.models.enums import IssueType, Severity, IssueStatus
 
 router = APIRouter(prefix="/issues", tags=["issues"])
@@ -102,3 +105,34 @@ async def get_issue(
         media=media_list,
         authority=await resolve_authority(db, float(issue.latitude), float(issue.longitude)),
     )
+
+
+@router.post("/{issue_id}/support", response_model=SupportResponse)
+async def support_issue(
+    issue_id: uuid.UUID,
+    body: SupportCreateRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    ip_address = request.client.host if request.client else None
+    try:
+        result = await create_support(
+            db,
+            issue_id=issue_id,
+            support_type=body.support_type,
+            user_id=user.id if user else None,
+            ip_address=ip_address,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=429 if "Rate limit" in str(e) else 404, detail=str(e))
+    return SupportResponse(**result)
+
+
+@router.get("/{issue_id}/supports", response_model=SupportSummaryResponse)
+async def get_issue_supports(
+    issue_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    summary = await get_support_summary(db, issue_id)
+    return SupportSummaryResponse(**summary)

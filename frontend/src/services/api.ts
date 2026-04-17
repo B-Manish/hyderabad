@@ -279,3 +279,82 @@ export async function updateAuthority(token: string, id: string, data: Partial<A
         body: JSON.stringify(data),
     });
 }
+
+// --- Phase 5: Issue Support ---
+export async function supportIssue(issueId: string, supportType: string): Promise<import('../types').SupportResponse> {
+    return apiFetch(`/issues/${issueId}/support`, {
+        method: 'POST',
+        body: JSON.stringify({ support_type: supportType }),
+    });
+}
+
+export async function getIssueSupportSummary(issueId: string): Promise<import('../types').SupportSummary> {
+    return apiFetch(`/issues/${issueId}/supports`);
+}
+
+// --- Phase 5: Hotspots ---
+export async function getHotspots(params: { limit?: number; period?: string } = {}): Promise<import('../types').HotspotsResponse> {
+    const sp = new URLSearchParams();
+    if (params.limit) sp.set('limit', String(params.limit));
+    if (params.period) sp.set('period', params.period);
+    return apiFetch(`/hotspots?${sp.toString()}`);
+}
+
+// --- Phase 5: Search ---
+export async function searchAll(params: { q: string; type?: string; lat?: number; lng?: number; page?: number; per_page?: number }): Promise<import('../types').SearchResponse> {
+    const sp = new URLSearchParams();
+    sp.set('q', params.q);
+    if (params.type) sp.set('type', params.type);
+    if (params.lat != null) sp.set('lat', String(params.lat));
+    if (params.lng != null) sp.set('lng', String(params.lng));
+    if (params.page) sp.set('page', String(params.page));
+    if (params.per_page) sp.set('per_page', String(params.per_page));
+    return apiFetch(`/search?${sp.toString()}`);
+}
+
+// --- Phase 5: Public Stats ---
+export async function getPublicStats(): Promise<import('../types').PublicStats> {
+    return apiFetch('/stats');
+}
+
+// --- Phase 5: Areas ---
+export async function getAreas(layerType: string = 'ward'): Promise<import('../types').AreaListItem[]> {
+    return apiFetch(`/areas?layer_type=${layerType}`);
+}
+
+export async function getAreaDetail(wardId: string): Promise<import('../types').AreaDetail> {
+    return apiFetch(`/areas/${wardId}`);
+}
+
+export async function getAreaIssues(wardId: string, page: number = 1): Promise<PaginatedIssues> {
+    return apiFetch(`/areas/${wardId}/issues?page=${page}`);
+}
+
+// --- Phase 5: Authority Public ---
+export async function getAuthorityPublic(authorityId: string): Promise<import('../types').AuthorityPublic> {
+    return apiFetch(`/authorities/${authorityId}`);
+}
+
+export async function getAuthoritiesPublic(): Promise<{ id: string; name: string; authority_type: string; issue_count: number }[]> {
+    return apiFetch('/authorities');
+}
+
+// --- Phase 5: Subscriptions ---
+export async function createSubscription(token: string, entityType: string, entityId: string): Promise<import('../types').SubscriptionItem> {
+    return apiFetch('/subscriptions', {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ entity_type: entityType, entity_id: entityId }),
+    });
+}
+
+export async function getSubscriptions(token: string): Promise<import('../types').SubscriptionItem[]> {
+    return apiFetch('/subscriptions', { headers: authHeaders(token) });
+}
+
+export async function deleteSubscription(token: string, subscriptionId: string): Promise<void> {
+    await fetch(`${API_URL}/subscriptions/${subscriptionId}`, {
+        method: 'DELETE',
+        headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    });
+}

@@ -30,6 +30,13 @@ class Settings(BaseSettings):
 
     # Rate Limiting
     RATE_LIMIT_REPORTS_PER_HOUR: int = 10
+    MAX_REPORTS_PER_USER_PER_DAY: int = 30
+    MAX_SUPPORTS_PER_USER_PER_DAY: int = 50
+
+    # Phase 5: Configurable Thresholds
+    DUPLICATE_RADIUS_METERS: int = 30
+    VERIFICATION_THRESHOLD: float = 0.6
+    FIXED_CONFIRM_THRESHOLD: int = 3
 
     # Upload Constraints
     MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB

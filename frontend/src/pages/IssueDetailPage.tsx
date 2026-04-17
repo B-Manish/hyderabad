@@ -1,12 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getIssue } from '../services/api';
+import { useState } from 'react';
+import { getIssue, supportIssue, getIssueSupportSummary } from '../services/api';
 import { SeverityBadge, StatusBadge } from '../components/Badges';
-import { ISSUE_TYPE_LABELS, CONFIDENCE_LABELS, CONFIDENCE_COLORS, NODE_TYPE_LABELS } from '../types';
-import type { Severity, IssueStatus, IssueType, ConfidenceLevel, AuthorityLookupResponse } from '../types';
+import { ISSUE_TYPE_LABELS, CONFIDENCE_LABELS, CONFIDENCE_COLORS, NODE_TYPE_LABELS, SUPPORT_TYPE_CONFIG } from '../types';
+import type { Severity, IssueStatus, IssueType, ConfidenceLevel, AuthorityLookupResponse, SupportType } from '../types';
 
 export default function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -138,13 +139,14 @@ export default function IssueDetailPage() {
         <AccountabilitySection authority={issue.authority} />
       )}
 
-      {/* Shareable URL */}
-      <div className="bg-gray-50 rounded-lg border p-4 text-center">
-        <p className="text-sm text-gray-500 mb-1">Share this issue</p>
-        <p className="text-xs text-gray-400 font-mono break-all">
-          {window.location.href}
-        </p>
-      </div>
+      {/* Phase 5: Support Buttons */}
+      <SupportSection issueId={id!} currentCount={issue.support_count} reportCount={issue.report_count} />
+
+      {/* Phase 5: Trust Signals */}
+      <TrustSignals issue={issue} />
+
+      {/* Phase 5: Share Section */}
+      <ShareSection issueTitle={issue.title} />
     </div>
   );
 }
@@ -154,6 +156,153 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between">
       <dt className="text-gray-500">{label}</dt>
       <dd className="font-medium text-gray-800">{value}</dd>
+    </div>
+  );
+}
+
+function SupportSection({ issueId, currentCount, reportCount }: { issueId: string; currentCount: number; reportCount: number }) {
+  const queryClient = useQueryClient();
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+
+  const { data: summary } = useQuery({
+    queryKey: ['issue-supports', issueId],
+    queryFn: () => getIssueSupportSummary(issueId),
+  });
+
+  const mutation = useMutation({
+    mutationFn: (supportType: string) => supportIssue(issueId, supportType),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['issue', issueId] });
+      queryClient.invalidateQueries({ queryKey: ['issue-supports', issueId] });
+      setFeedbackMsg(`Thanks! ${data.support_count} people have confirmed this issue.`);
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    },
+    onError: (err: Error) => {
+      setFeedbackMsg(err.message.includes('Rate limit') ? 'You already confirmed this recently.' : 'Failed to submit.');
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    },
+  });
+
+  const supportTypes: SupportType[] = ['same_issue', 'dangerous', 'still_exists', 'fixed_confirmed'];
+
+  return (
+    <div className="bg-white rounded-lg border p-6 mb-8">
+      <h2 className="font-semibold text-gray-800 mb-1">Community Confirmation</h2>
+      <p className="text-sm text-gray-500 mb-4">
+        {currentCount + reportCount} people have interacted with this issue
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+        {supportTypes.map((st) => {
+          const config = SUPPORT_TYPE_CONFIG[st];
+          const count = summary?.by_type?.[st] ?? 0;
+          return (
+            <button
+              key={st}
+              onClick={() => mutation.mutate(st)}
+              disabled={mutation.isPending}
+              className={`flex flex-col items-center gap-1 p-3 rounded-lg border text-sm font-medium transition-colors ${config.color}`}
+            >
+              <span className="text-xl">{config.icon}</span>
+              <span className="text-xs text-center">{config.label}</span>
+              {count > 0 && <span className="text-xs opacity-70">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+      {feedbackMsg && (
+        <p className="text-sm text-center text-primary-600 font-medium">{feedbackMsg}</p>
+      )}
+    </div>
+  );
+}
+
+function TrustSignals({ issue }: { issue: { is_verified: boolean; report_count: number; support_count: number; first_reported_at: string; latest_reported_at: string; verification_score: number } }) {
+  const daysSinceReported = Math.floor(
+    (Date.now() - new Date(issue.first_reported_at).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const daysSinceLastConfirmed = Math.floor(
+    (Date.now() - new Date(issue.latest_reported_at).getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  return (
+    <div className="bg-white rounded-lg border p-6 mb-8">
+      <h2 className="font-semibold text-gray-800 mb-3">Trust Signals</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="text-center">
+          {issue.is_verified ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 mb-1">✓ Verified</span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 mb-1">Unverified</span>
+          )}
+          <p className="text-xs text-gray-500">Status</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-primary-700">{issue.report_count}</p>
+          <p className="text-xs text-gray-500">riders reported</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-primary-700">{issue.support_count}</p>
+          <p className="text-xs text-gray-500">confirmations</p>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold text-primary-700">{daysSinceReported}d</p>
+          <p className="text-xs text-gray-500">since first report</p>
+        </div>
+      </div>
+      {daysSinceLastConfirmed <= 7 && (
+        <p className="text-xs text-green-600 text-center mt-3">
+          Last confirmed {daysSinceLastConfirmed === 0 ? 'today' : `${daysSinceLastConfirmed} days ago`}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ShareSection({ issueTitle }: { issueTitle: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${issueTitle}\n${url}`)}`, '_blank');
+  };
+
+  const handleTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(issueTitle)}&url=${encodeURIComponent(url)}`, '_blank');
+  };
+
+  const handleNativeShare = () => {
+    if (navigator.share) {
+      navigator.share({ title: issueTitle, url }).catch(() => {});
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 rounded-lg border p-4 mb-8">
+      <h3 className="text-sm font-semibold text-gray-700 mb-3 text-center">Share this issue</h3>
+      <div className="flex items-center justify-center gap-3">
+        <button onClick={handleCopy} className="px-3 py-2 text-xs bg-white border rounded-lg hover:bg-gray-50 transition-colors">
+          {copied ? '✓ Copied!' : '📋 Copy link'}
+        </button>
+        <button onClick={handleWhatsApp} className="px-3 py-2 text-xs bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-green-700">
+          WhatsApp
+        </button>
+        <button onClick={handleTwitter} className="px-3 py-2 text-xs bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100 transition-colors text-sky-700">
+          Twitter/X
+        </button>
+        {typeof navigator.share === 'function' && (
+          <button onClick={handleNativeShare} className="px-3 py-2 text-xs bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors text-purple-700">
+            Share…
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-gray-400 font-mono break-all text-center mt-2">{url}</p>
     </div>
   );
 }

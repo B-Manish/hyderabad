@@ -19,6 +19,12 @@ from app.api.admin_authorities import router as admin_authorities_router, chain_
 from app.api.admin_analytics import router as admin_analytics_router
 from app.api.admin_audit import router as admin_audit_router
 from app.api.admin_users import router as admin_users_router
+from app.api.hotspots import router as hotspots_router
+from app.api.search import router as search_router
+from app.api.areas import router as areas_router
+from app.api.stats import router as stats_router
+from app.api.subscriptions import router as subscriptions_router
+from app.api.authorities_public import router as authorities_public_router
 
 settings = get_settings()
 setup_logging(debug=settings.DEBUG)
@@ -74,6 +80,12 @@ app.include_router(admin_chain_router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_analytics_router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_audit_router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_users_router, prefix=settings.API_V1_PREFIX)
+app.include_router(hotspots_router, prefix=settings.API_V1_PREFIX)
+app.include_router(search_router, prefix=settings.API_V1_PREFIX)
+app.include_router(areas_router, prefix=settings.API_V1_PREFIX)
+app.include_router(stats_router, prefix=settings.API_V1_PREFIX)
+app.include_router(subscriptions_router, prefix=settings.API_V1_PREFIX)
+app.include_router(authorities_public_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")

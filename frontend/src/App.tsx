@@ -7,6 +7,11 @@ import MapPage from './pages/MapPage';
 import IssueListPage from './pages/IssueListPage';
 import IssueDetailPage from './pages/IssueDetailPage';
 import ReportPage from './pages/ReportPage';
+import HotspotsPage from './pages/HotspotsPage';
+import AboutPage from './pages/AboutPage';
+import AreaDetailPage from './pages/AreaDetailPage';
+import AuthorityPublicPage from './pages/AuthorityPublicPage';
+import SearchPage from './pages/SearchPage';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import ModerationQueuePage from './pages/admin/ModerationQueuePage';
@@ -37,6 +42,11 @@ export default function App() {
             <Route path="/issues" element={<IssueListPage />} />
             <Route path="/issues/:id" element={<IssueDetailPage />} />
             <Route path="/report" element={<ReportPage />} />
+            <Route path="/hotspots" element={<HotspotsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/areas/:id" element={<AreaDetailPage />} />
+            <Route path="/authorities/:id" element={<AuthorityPublicPage />} />
+            <Route path="/search" element={<SearchPage />} />
           </Route>
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLoginPage />} />

@@ -439,3 +439,116 @@ export const MODERATION_STATUS_COLORS: Record<ModerationStatus, string> = {
     low_quality_evidence: 'bg-orange-100 text-orange-700',
     duplicate_merged: 'bg-gray-100 text-gray-700',
 };
+
+// --- Phase 5: Support types ---
+export type SupportType = 'same_issue' | 'dangerous' | 'fixed_confirmed' | 'still_exists';
+
+export interface SupportResponse {
+    issue_id: string;
+    support_count: number;
+    support_type: string;
+    created_at: string;
+    needs_resolution_review: boolean;
+}
+
+export interface SupportSummary {
+    total: number;
+    by_type: Record<string, number>;
+}
+
+export const SUPPORT_TYPE_CONFIG: Record<SupportType, { label: string; icon: string; color: string }> = {
+    same_issue: { label: "I've seen this too", icon: '👁️', color: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
+    dangerous: { label: 'This is dangerous', icon: '⚠️', color: 'bg-red-50 text-red-700 hover:bg-red-100' },
+    still_exists: { label: 'Still exists', icon: '🔄', color: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' },
+    fixed_confirmed: { label: 'Fixed', icon: '✅', color: 'bg-green-50 text-green-700 hover:bg-green-100' },
+};
+
+// --- Phase 5: Hotspot types ---
+export interface HotspotItem {
+    ward: string;
+    ward_id: string | null;
+    zone: string | null;
+    issue_count: number;
+    critical_count: number;
+    high_count: number;
+    avg_age_days: number;
+    hotspot_score: number;
+    map_url: string | null;
+}
+
+export interface HotspotsResponse {
+    period: string;
+    hotspots: HotspotItem[];
+}
+
+// --- Phase 5: Search types ---
+export interface SearchResultItem {
+    type: string;
+    id: string;
+    name: string;
+    issue_count?: number;
+    url?: string;
+    severity?: string;
+}
+
+export interface SearchResponse {
+    results: SearchResultItem[];
+    total: number;
+}
+
+// --- Phase 5: Public stats ---
+export interface PublicStats {
+    total_issues: number;
+    unresolved_issues: number;
+    wards_covered: number;
+    community_confirmations: number;
+    issues_resolved: number;
+}
+
+// --- Phase 5: Area / Locality ---
+export interface AreaDetail {
+    id: string;
+    name: string;
+    code: string | null;
+    layer_type: string;
+    total_issues: number;
+    unresolved_count: number;
+    severity_breakdown: Record<string, number>;
+    top_issues: IssueListItem[];
+    authority_name: string | null;
+    hotspot_rank: number | null;
+}
+
+export interface AreaListItem {
+    id: string;
+    name: string;
+    code: string | null;
+    layer_type: string;
+    issue_count: number;
+}
+
+// --- Phase 5: Authority public ---
+export interface AuthorityPublic {
+    id: string;
+    name: string;
+    authority_type: string;
+    description: string | null;
+    website_url: string | null;
+    grievance_url: string | null;
+    contact_phone: string | null;
+    contact_email: string | null;
+    total_issues: number;
+    unresolved_count: number;
+    resolved_count: number;
+    severity_breakdown: Record<string, number>;
+    covered_wards: string[];
+    accountability_chain: AccountabilityChainNode[];
+}
+
+// --- Phase 5: Subscriptions ---
+export interface SubscriptionItem {
+    id: string;
+    entity_type: string;
+    entity_id: string;
+    created_at: string;
+}

@@ -1,6 +1,18 @@
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getPublicStats, getHotspots } from '../services/api';
 
 export default function LandingPage() {
+  const { data: stats } = useQuery({
+    queryKey: ['public-stats'],
+    queryFn: getPublicStats,
+  });
+
+  const { data: hotspots } = useQuery({
+    queryKey: ['hotspots'],
+    queryFn: () => getHotspots({ limit: 5, period: 'week' }),
+  });
+
   return (
     <div>
       {/* Hero Section */}
@@ -38,16 +50,45 @@ export default function LandingPage() {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-center text-gray-800 mb-10">Platform Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <StatCard number="—" label="Issues Reported" icon="📍" />
-            <StatCard number="—" label="Unresolved Issues" icon="⚠️" />
-            <StatCard number="—" label="Wards Covered" icon="🗺️" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            <StatCard number={stats?.total_issues ?? 0} label="Issues Reported" icon="📍" />
+            <StatCard number={stats?.unresolved_issues ?? 0} label="Unresolved" icon="⚠️" />
+            <StatCard number={stats?.wards_covered ?? 0} label="Wards Covered" icon="🗺️" />
+            <StatCard number={stats?.community_confirmations ?? 0} label="Confirmations" icon="👥" />
+            <StatCard number={stats?.issues_resolved ?? 0} label="Resolved" icon="✅" />
           </div>
-          <p className="text-center text-sm text-gray-400 mt-6">
-            Stats will be populated as reports come in.
-          </p>
         </div>
       </section>
+
+      {/* Hotspot Section */}
+      {hotspots && hotspots.hotspots.length > 0 && (
+        <section className="py-16 bg-red-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Top Worst Road Areas This Week</h2>
+            <p className="text-center text-sm text-gray-500 mb-8">Ranked by severity and issue density</p>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {hotspots.hotspots.map((h, idx) => (
+                <Link key={h.ward_id || idx} to={h.map_url || '/map'} className="bg-white rounded-lg border p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-2">
+                    <span className="text-2xl font-bold text-red-600">#{idx + 1}</span>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                      Score: {h.hotspot_score}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 text-sm mb-1">{h.ward}</h3>
+                  <p className="text-xs text-gray-500">{h.issue_count} issues &middot; {h.critical_count} critical</p>
+                  <p className="text-xs text-gray-400">Avg age: {h.avg_age_days} days</p>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center mt-6">
+              <Link to="/hotspots" className="text-sm text-primary-600 hover:underline">
+                View full hotspot rankings →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* How It Works */}
       <section className="py-16 bg-gray-50">
@@ -69,19 +110,27 @@ export default function LandingPage() {
           <p className="text-primary-200 mb-8">
             Every report helps make Hyderabad roads safer for bikers, commuters, and pedestrians.
           </p>
-          <Link
-            to="/report"
-            className="inline-flex items-center justify-center px-8 py-3 bg-white text-primary-700 font-semibold rounded-lg shadow-lg hover:bg-primary-50 transition-colors text-lg"
-          >
-            Report a road issue
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/report"
+              className="inline-flex items-center justify-center px-8 py-3 bg-white text-primary-700 font-semibold rounded-lg shadow-lg hover:bg-primary-50 transition-colors text-lg"
+            >
+              Report a road issue
+            </Link>
+            <Link
+              to="/about"
+              className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-colors text-lg"
+            >
+              Learn more
+            </Link>
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function StatCard({ number, label, icon }: { number: string; label: string; icon: string }) {
+function StatCard({ number, label, icon }: { number: number; label: string; icon: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center">
       <div className="text-3xl mb-2">{icon}</div>

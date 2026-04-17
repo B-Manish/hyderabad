@@ -23,6 +23,9 @@ export default function Navbar() {
             <Link to="/" className={linkClass('/')}>Home</Link>
             <Link to="/map" className={linkClass('/map')}>Map</Link>
             <Link to="/issues" className={linkClass('/issues')}>Issues</Link>
+            <Link to="/hotspots" className={linkClass('/hotspots')}>Hotspots</Link>
+            <Link to="/search" className={linkClass('/search')}>Search</Link>
+            <Link to="/about" className={linkClass('/about')}>About</Link>
             <Link to="/report" className={linkClass('/report')}>
               <span className="flex items-center space-x-1">
                 <span>+</span>

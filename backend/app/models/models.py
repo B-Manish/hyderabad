@@ -288,3 +288,29 @@ class ModerationAction(Base):
     moderator = relationship("User", foreign_keys=[moderator_user_id])
     report = relationship("Report", foreign_keys=[report_id])
     issue = relationship("Issue", foreign_keys=[issue_id])
+
+
+class IssueSupport(Base):
+    __tablename__ = "issue_supports"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    issue_id = Column(UUID(as_uuid=True), ForeignKey("issues.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    support_type = Column(String(50), nullable=False)
+    ip_address = Column(String(45), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    issue = relationship("Issue", backref="supports")
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    entity_type = Column(String(50), nullable=False)
+    entity_id = Column(UUID(as_uuid=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])

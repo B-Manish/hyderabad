@@ -50,5 +50,14 @@ async def invalidate_map_cache():
                 await r.delete(*keys)
             if cursor == 0:
                 break
+        # Also invalidate hotspot and stats caches
+        for pattern in ["hotspots:*", "public_stats"]:
+            cursor = 0
+            while True:
+                cursor, keys = await r.scan(cursor, match=pattern, count=100)
+                if keys:
+                    await r.delete(*keys)
+                if cursor == 0:
+                    break
     except Exception:
         pass  # Redis unavailable, skip invalidation

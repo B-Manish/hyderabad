@@ -270,3 +270,90 @@ class ResponsibilityMappingResponse(BaseModel):
 
 class IssueDetailWithAuthority(IssueDetailResponse):
     authority: AuthorityLookupResponse | None = None
+
+
+# --- Phase 5: Support ---
+class SupportCreateRequest(BaseModel):
+    support_type: str = Field(..., pattern="^(same_issue|dangerous|fixed_confirmed|still_exists)$")
+
+
+class SupportResponse(BaseModel):
+    issue_id: str
+    support_count: int
+    support_type: str
+    created_at: str
+    needs_resolution_review: bool = False
+
+
+class SupportSummaryResponse(BaseModel):
+    total: int
+    by_type: dict[str, int]
+
+
+# --- Phase 5: Hotspots ---
+class HotspotItem(BaseModel):
+    ward: str
+    ward_id: str | None = None
+    zone: str | None = None
+    issue_count: int
+    critical_count: int
+    high_count: int
+    avg_age_days: float
+    hotspot_score: float
+    map_url: str | None = None
+
+
+class HotspotsResponse(BaseModel):
+    period: str
+    hotspots: list[HotspotItem]
+
+
+# --- Phase 5: Locality / Area ---
+class AreaDetailResponse(BaseModel):
+    id: str
+    name: str
+    code: str | None = None
+    layer_type: str
+    total_issues: int = 0
+    unresolved_count: int = 0
+    severity_breakdown: dict[str, int] = {}
+    top_issues: list[IssueListItem] = []
+    authority_name: str | None = None
+    hotspot_rank: int | None = None
+
+
+# --- Phase 5: Search ---
+class SearchResultItem(BaseModel):
+    type: str  # ward, road, issue, authority
+    id: str
+    name: str
+    issue_count: int | None = None
+    url: str | None = None
+    severity: str | None = None
+
+
+class SearchResponse(BaseModel):
+    results: list[SearchResultItem]
+    total: int
+
+
+# --- Phase 5: Stats ---
+class PublicStatsResponse(BaseModel):
+    total_issues: int
+    unresolved_issues: int
+    wards_covered: int
+    community_confirmations: int
+    issues_resolved: int
+
+
+# --- Phase 5: Subscriptions ---
+class SubscriptionCreateRequest(BaseModel):
+    entity_type: str = Field(..., pattern="^(issue|ward|zone|authority)$")
+    entity_id: str
+
+
+class SubscriptionResponse(BaseModel):
+    id: str
+    entity_type: str
+    entity_id: str
+    created_at: str

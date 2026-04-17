@@ -94,3 +94,17 @@ class ConfidenceLevel(str, enum.Enum):
     medium = "medium"
     low = "low"
     very_low = "very_low"
+
+
+class SupportType(str, enum.Enum):
+    same_issue = "same_issue"
+    dangerous = "dangerous"
+    fixed_confirmed = "fixed_confirmed"
+    still_exists = "still_exists"
+
+
+class SubscriptionEntityType(str, enum.Enum):
+    issue = "issue"
+    ward = "ward"
+    zone = "zone"
+    authority = "authority"
