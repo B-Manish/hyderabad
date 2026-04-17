@@ -4,7 +4,7 @@ from sqlalchemy import (
     Column, String, Boolean, DateTime, Enum, ForeignKey,
     Integer, Numeric, Text, BigInteger, Index
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from geoalchemy2 import Geography
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -31,6 +31,7 @@ class User(Base):
     auth_provider = Column(String(50), default="anonymous")
     is_anonymous_allowed = Column(Boolean, default=True)
     role = Column(Enum(UserRole), default=UserRole.citizen, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -257,3 +258,33 @@ class AccountabilityChainNode(Base):
 
     authority = relationship("Authority", back_populates="accountability_nodes")
     jurisdiction_polygon = relationship("JurisdictionPolygon", back_populates="accountability_nodes")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actor_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    entity_type = Column(String(50), nullable=False)
+    entity_id = Column(UUID(as_uuid=True), nullable=True)
+    action = Column(String(50), nullable=False)
+    metadata_json = Column(JSONB, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    actor = relationship("User", foreign_keys=[actor_user_id])
+
+
+class ModerationAction(Base):
+    __tablename__ = "moderation_actions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    report_id = Column(UUID(as_uuid=True), ForeignKey("reports.id"), nullable=True)
+    issue_id = Column(UUID(as_uuid=True), ForeignKey("issues.id"), nullable=True)
+    moderator_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    action_type = Column(String(50), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    moderator = relationship("User", foreign_keys=[moderator_user_id])
+    report = relationship("Report", foreign_keys=[report_id])
+    issue = relationship("Issue", foreign_keys=[issue_id])

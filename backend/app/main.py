@@ -13,6 +13,12 @@ from app.api.auth import router as auth_router
 from app.api.map import router as map_router
 from app.api.lookup import router as lookup_router
 from app.api.admin_jurisdictions import router as admin_jurisdictions_router, override_router
+from app.api.admin_moderation import router as admin_moderation_router
+from app.api.admin_issues import router as admin_issues_router
+from app.api.admin_authorities import router as admin_authorities_router, chain_router as admin_chain_router
+from app.api.admin_analytics import router as admin_analytics_router
+from app.api.admin_audit import router as admin_audit_router
+from app.api.admin_users import router as admin_users_router
 
 settings = get_settings()
 setup_logging(debug=settings.DEBUG)
@@ -61,6 +67,13 @@ app.include_router(map_router, prefix=settings.API_V1_PREFIX)
 app.include_router(lookup_router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin_jurisdictions_router, prefix=settings.API_V1_PREFIX)
 app.include_router(override_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_moderation_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_issues_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_authorities_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_chain_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_analytics_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_audit_router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin_users_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")

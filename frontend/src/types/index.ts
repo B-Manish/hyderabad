@@ -295,3 +295,147 @@ export const NODE_TYPE_LABELS: Record<string, string> = {
     escalation: 'Escalation',
     grievance_channel: 'Grievance Channel',
 };
+
+// --- Phase 4: Admin types ---
+
+export type UserRole = 'citizen' | 'moderator' | 'admin';
+
+export interface AdminReportItem {
+    id: string;
+    latitude: number;
+    longitude: number;
+    issue_type: IssueType;
+    severity: Severity;
+    description: string | null;
+    landmark: string | null;
+    road_name_input: string | null;
+    moderation_status: ModerationStatus;
+    source: string;
+    submitted_at: string;
+    user_name: string | null;
+    user_email: string | null;
+    issue_id: string | null;
+    media: MediaItem[];
+}
+
+export interface PaginatedAdminReports {
+    items: AdminReportItem[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+}
+
+export interface AdminIssueItem {
+    id: string;
+    title: string;
+    canonical_issue_type: IssueType;
+    canonical_severity: Severity;
+    status: IssueStatus;
+    latitude: number;
+    longitude: number;
+    report_count: number;
+    support_count: number;
+    is_verified: boolean;
+    first_reported_at: string;
+    latest_reported_at: string;
+    resolved_at: string | null;
+}
+
+export interface PaginatedAdminIssues {
+    items: AdminIssueItem[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+}
+
+export interface AnalyticsSummary {
+    total_reports: number;
+    total_issues: number;
+    unresolved_issues: number;
+    avg_issue_age_days: number;
+    reports_this_week: number;
+    resolved_this_week: number;
+    duplicate_merge_rate: number;
+    top_wards: { ward: string; unresolved_count: number }[];
+    severity_distribution: Record<string, number>;
+    status_distribution: Record<string, number>;
+}
+
+export interface AuditLogItem {
+    id: string;
+    actor_user_id: string | null;
+    actor_name: string | null;
+    actor_email: string | null;
+    entity_type: string;
+    entity_id: string | null;
+    action: string;
+    metadata_json: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface PaginatedAuditLogs {
+    items: AuditLogItem[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+}
+
+export interface AdminUserItem {
+    id: string;
+    name: string | null;
+    email: string | null;
+    role: UserRole;
+    auth_provider: string;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface PaginatedUsers {
+    items: AdminUserItem[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+}
+
+export interface AuthorityAdmin {
+    id: string;
+    name: string;
+    authority_type: string;
+    parent_authority_id: string | null;
+    description: string | null;
+    website_url: string | null;
+    grievance_url: string | null;
+    contact_phone: string | null;
+    contact_email: string | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface StatusHistoryItem {
+    id: string;
+    old_status: string | null;
+    new_status: string;
+    change_reason: string | null;
+    created_at: string;
+}
+
+export const MODERATION_STATUS_LABELS: Record<ModerationStatus, string> = {
+    pending_moderation: 'Pending',
+    approved: 'Approved',
+    rejected_abuse: 'Rejected (Abuse)',
+    low_quality_evidence: 'Low Quality',
+    duplicate_merged: 'Duplicate',
+};
+
+export const MODERATION_STATUS_COLORS: Record<ModerationStatus, string> = {
+    pending_moderation: 'bg-yellow-100 text-yellow-700',
+    approved: 'bg-green-100 text-green-700',
+    rejected_abuse: 'bg-red-100 text-red-700',
+    low_quality_evidence: 'bg-orange-100 text-orange-700',
+    duplicate_merged: 'bg-gray-100 text-gray-700',
+};

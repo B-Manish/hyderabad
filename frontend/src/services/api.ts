@@ -11,6 +11,13 @@ import type {
     AuthorityLookupResponse,
     ReverseGeocodeResponse,
     IssueType,
+    PaginatedAdminReports,
+    PaginatedAdminIssues,
+    AnalyticsSummary,
+    PaginatedAuditLogs,
+    PaginatedUsers,
+    AuthorityAdmin,
+    StatusHistoryItem,
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
@@ -140,4 +147,135 @@ export async function reverseGeocode(lat: number, lng: number): Promise<ReverseG
 
 export async function getJurisdictionPolygons(layerType: string = 'ward'): Promise<GeoJSON.FeatureCollection> {
     return apiFetch(`/admin/jurisdictions/polygons?layer_type=${layerType}`);
+}
+
+// --- Admin: auth helper ---
+function authHeaders(token: string): HeadersInit {
+    return { Authorization: `Bearer ${token}` };
+}
+
+// --- Admin: Moderation ---
+export async function getAdminReports(
+    token: string,
+    params: { moderation_status?: string; issue_type?: string; severity?: string; sort_by?: string; page?: number; page_size?: number } = {},
+): Promise<PaginatedAdminReports> {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    return apiFetch(`/admin/reports?${sp.toString()}`, { headers: authHeaders(token) });
+}
+
+export async function approveReport(token: string, reportId: string, notes?: string): Promise<{ status: string; report_id: string; issue_id: string }> {
+    return apiFetch(`/admin/reports/${reportId}/approve`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ notes: notes || null }),
+    });
+}
+
+export async function rejectReport(token: string, reportId: string, reason: string, notes?: string): Promise<{ status: string }> {
+    return apiFetch(`/admin/reports/${reportId}/reject`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ reason, notes: notes || null }),
+    });
+}
+
+// --- Admin: Issues ---
+export async function getAdminIssues(
+    token: string,
+    params: { status?: string; issue_type?: string; severity?: string; sort_by?: string; page?: number; page_size?: number } = {},
+): Promise<PaginatedAdminIssues> {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    return apiFetch(`/admin/issues?${sp.toString()}`, { headers: authHeaders(token) });
+}
+
+export async function changeIssueStatus(token: string, issueId: string, newStatus: string, reason?: string): Promise<{ status: string }> {
+    return apiFetch(`/admin/issues/${issueId}/status`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ new_status: newStatus, reason }),
+    });
+}
+
+export async function editIssueMeta(token: string, issueId: string, data: { title?: string; canonical_issue_type?: string; canonical_severity?: string; latitude?: number; longitude?: number }): Promise<unknown> {
+    return apiFetch(`/admin/issues/${issueId}`, {
+        method: 'PATCH',
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+    });
+}
+
+export async function mergeIssues(token: string, issueId: string, mergeIds: string[], survivingId: string, notes?: string): Promise<unknown> {
+    return apiFetch(`/admin/issues/${issueId}/merge`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ merge_issue_ids: mergeIds, surviving_issue_id: survivingId, notes }),
+    });
+}
+
+export async function getIssueHistory(token: string, issueId: string): Promise<StatusHistoryItem[]> {
+    return apiFetch(`/admin/issues/${issueId}/history`, { headers: authHeaders(token) });
+}
+
+// --- Admin: Analytics ---
+export async function getAnalyticsSummary(token: string): Promise<AnalyticsSummary> {
+    return apiFetch('/admin/analytics/summary', { headers: authHeaders(token) });
+}
+
+// --- Admin: Audit Logs ---
+export async function getAuditLogs(
+    token: string,
+    params: { entity_type?: string; action?: string; page?: number; page_size?: number } = {},
+): Promise<PaginatedAuditLogs> {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    return apiFetch(`/admin/audit-logs?${sp.toString()}`, { headers: authHeaders(token) });
+}
+
+// --- Admin: Users ---
+export async function getAdminUsers(
+    token: string,
+    params: { search?: string; role?: string; page?: number; page_size?: number } = {},
+): Promise<PaginatedUsers> {
+    const sp = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== '') sp.set(k, String(v)); });
+    return apiFetch(`/admin/users?${sp.toString()}`, { headers: authHeaders(token) });
+}
+
+export async function changeUserRole(token: string, userId: string, role: string): Promise<{ user_id: string; role: string }> {
+    return apiFetch(`/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        headers: authHeaders(token),
+        body: JSON.stringify({ role }),
+    });
+}
+
+export async function deactivateUser(token: string, userId: string, isActive: boolean): Promise<{ user_id: string; is_active: boolean }> {
+    return apiFetch(`/admin/users/${userId}/deactivate`, {
+        method: 'PATCH',
+        headers: authHeaders(token),
+        body: JSON.stringify({ is_active: isActive }),
+    });
+}
+
+// --- Admin: Authorities ---
+export async function getAdminAuthorities(token: string): Promise<AuthorityAdmin[]> {
+    return apiFetch('/admin/authorities', { headers: authHeaders(token) });
+}
+
+export async function createAuthority(token: string, data: { name: string; authority_type: string; description?: string; contact_phone?: string; contact_email?: string }): Promise<AuthorityAdmin> {
+    return apiFetch('/admin/authorities', {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateAuthority(token: string, id: string, data: Partial<AuthorityAdmin>): Promise<AuthorityAdmin> {
+    return apiFetch(`/admin/authorities/${id}`, {
+        method: 'PATCH',
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+    });
 }

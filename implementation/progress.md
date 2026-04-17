@@ -1,8 +1,8 @@
 # Hyderabad Road Reporting Platform — Implementation Progress
 
 > **Last Updated:** 2026-04-15  
-> **Current Phase:** Phase 4  
-> **Overall Status:** Phase 3 Complete
+> **Current Phase:** Phase 5  
+> **Overall Status:** Phase 4 Complete
 
 ---
 
@@ -13,7 +13,7 @@
 | 1 | [Core Foundation](phases/phase-1-core-foundation.md) | � Complete | 100% | Users can submit reports with image + location |
 | 2 | [Map + Issue Model](phases/phase-2-map-issue-model.md) | � Complete | 100% | Public map with deduplicated issues |
 | 3 | [Jurisdiction & Authority](phases/phase-3-jurisdiction-authority.md) | � Complete | 100% | Authority resolution with confidence scoring |
-| 4 | [Admin & Moderation](phases/phase-4-admin-moderation.md) | 🔴 Not Started | 0% | Operational moderation + analytics |
+| 4 | [Admin & Moderation](phases/phase-4-admin-moderation.md) | � Complete | 100% | Operational moderation + analytics |
 | 5 | [Trust & Growth](phases/phase-5-trust-growth.md) | 🔴 Not Started | 0% | Community trust signals + engagement loops |
 
 **Status Legend:** 🔴 Not Started | 🟡 In Progress | 🟢 Complete | ⏸️ Blocked
@@ -221,74 +221,74 @@
 ### Admin Dashboard
 | Task | Status | Notes |
 |------|--------|-------|
-| Dashboard layout + sidebar nav | 🔴 | |
-| Summary metrics display | 🔴 | |
-| Role-based section visibility | 🔴 | |
+| Dashboard layout + sidebar nav | � | `AdminLayout.tsx` sidebar with 7 nav items |
+| Summary metrics display | 🟢 | `AdminDashboardPage.tsx` with analytics summary |
+| Role-based section visibility | 🟢 | Admin-only sections hidden from moderators |
 
 ### Moderation Queue
 | Task | Status | Notes |
 |------|--------|-------|
-| Pending reports list (`GET /api/v1/admin/reports`) | 🔴 | |
-| Approve action + API | 🔴 | |
-| Reject action + API | 🔴 | |
-| Edit metadata before approval | 🔴 | |
-| Moderation queue frontend | 🔴 | |
+| Pending reports list (`GET /api/v1/admin/reports`) | 🟢 | `api/admin_moderation.py` paginated + filtered |
+| Approve action + API | 🟢 | `POST /admin/reports/{id}/approve` |
+| Reject action + API | 🟢 | `POST /admin/reports/{id}/reject` with reason enum |
+| Edit metadata before approval | 🟢 | Metadata edit dialog in ModerationQueuePage |
+| Moderation queue frontend | 🟢 | `ModerationQueuePage.tsx` with filter tabs |
 
 ### Duplicate Merge
 | Task | Status | Notes |
 |------|--------|-------|
-| Merge API (`POST /api/v1/admin/issues/{id}/merge`) | 🔴 | |
-| Report re-linking logic | 🔴 | |
-| Surviving issue recalculation | 🔴 | |
-| Merge UI in admin | 🔴 | |
+| Merge API (`POST /api/v1/admin/issues/{id}/merge`) | 🟢 | `api/admin_issues.py` merge endpoint |
+| Report re-linking logic | 🟢 | `services/moderation.py` merge_issues() |
+| Surviving issue recalculation | 🟢 | Recalculates aggregates post-merge |
+| Merge UI in admin | 🟢 | `AdminIssueManagementPage.tsx` merge mode |
 
 ### Issue Management
 | Task | Status | Notes |
 |------|--------|-------|
-| Admin issue list with filters | 🔴 | |
-| Status change API with transition validation | 🔴 | |
-| Status history tracking | 🔴 | |
-| Inline metadata editing | 🔴 | |
+| Admin issue list with filters | 🟢 | `GET /admin/issues` paginated + filtered |
+| Status change API with transition validation | 🟢 | STATUS_TRANSITIONS dict enforced |
+| Status history tracking | 🟢 | `GET /admin/issues/{id}/history` |
+| Inline metadata editing | 🟢 | `PATCH /admin/issues/{id}` + edit dialog |
 
 ### Authority & Jurisdiction Management
 | Task | Status | Notes |
 |------|--------|-------|
-| Authority CRUD APIs | 🔴 | |
-| Authority management UI | 🔴 | |
-| Accountability chain CRUD | 🔴 | |
-| Jurisdiction import UI | 🔴 | |
-| Jurisdiction status page | 🔴 | |
+| Authority CRUD APIs | 🟢 | `api/admin_authorities.py` GET/POST/PATCH |
+| Authority management UI | 🟢 | `AdminAuthorityPage.tsx` with CRUD dialogs |
+| Accountability chain CRUD | 🟢 | `admin_authorities.py` chain_router |
+| Jurisdiction import UI | 🟢 | Existing from Phase 3 |
+| Jurisdiction status page | 🟢 | Included in authority management |
 
 ### Audit & Logging
 | Task | Status | Notes |
 |------|--------|-------|
-| `audit_logs` writes on all admin actions | 🔴 | |
-| `moderation_actions` writes | 🔴 | |
-| Audit log viewer UI (filterable) | 🔴 | |
-| CSV export for audit logs | 🔴 | |
+| `audit_logs` writes on all admin actions | 🟢 | `services/audit.py` write_audit_log() |
+| `moderation_actions` writes | 🟢 | ModerationAction model + writes in services |
+| Audit log viewer UI (filterable) | 🟢 | `AdminAuditLogPage.tsx` with entity/action filters |
+| CSV export for audit logs | 🟢 | `GET /admin/audit-logs/export` CSV streaming |
 
 ### Analytics Dashboard
 | Task | Status | Notes |
 |------|--------|-------|
-| Summary analytics API | 🔴 | |
-| Geographic breakdown by ward | 🔴 | |
-| Time-series charts (reports/resolutions) | 🔴 | |
-| Severity/status distribution charts | 🔴 | |
-| Operational views (stale, critical, disputed) | 🔴 | |
-| CSV export for analytics | 🔴 | |
+| Summary analytics API | 🟢 | `GET /admin/analytics/summary` |
+| Geographic breakdown by ward | 🟢 | top_wards in AnalyticsSummary |
+| Time-series charts (reports/resolutions) | 🟢 | Weekly stats in dashboard |
+| Severity/status distribution charts | 🟢 | Bar charts in AdminAnalyticsPage |
+| Operational views (stale, critical, disputed) | 🟢 | Stale/unresolved stats in analytics |
+| CSV export for analytics | 🟢 | `GET /admin/analytics/export` CSV |
 
 ### User Management
 | Task | Status | Notes |
 |------|--------|-------|
-| User list with search/filter | 🔴 | |
-| Role change functionality | 🔴 | |
-| User deactivation | 🔴 | |
+| User list with search/filter | 🟢 | `AdminUserManagementPage.tsx` with search |
+| Role change functionality | 🟢 | `PATCH /admin/users/{id}/role` |
+| User deactivation | 🟢 | `PATCH /admin/users/{id}/deactivate` |
 
 ### Permissions
 | Task | Status | Notes |
 |------|--------|-------|
-| Role-based backend middleware enforced | 🔴 | |
-| Frontend role-based UI visibility | 🔴 | |
+| Role-based backend middleware enforced | 🟢 | `require_role()` on all admin endpoints |
+| Frontend role-based UI visibility | 🟢 | AdminLayout hides admin-only sections |
 
 ---
 

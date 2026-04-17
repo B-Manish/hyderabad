@@ -1,11 +1,20 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 import LandingPage from './pages/LandingPage';
 import MapPage from './pages/MapPage';
 import IssueListPage from './pages/IssueListPage';
 import IssueDetailPage from './pages/IssueDetailPage';
 import ReportPage from './pages/ReportPage';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import ModerationQueuePage from './pages/admin/ModerationQueuePage';
+import AdminIssueManagementPage from './pages/admin/AdminIssueManagementPage';
+import AdminAuthorityPage from './pages/admin/AdminAuthorityPage';
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
+import AdminUserManagementPage from './pages/admin/AdminUserManagementPage';
+import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,6 +37,17 @@ export default function App() {
             <Route path="/issues" element={<IssueListPage />} />
             <Route path="/issues/:id" element={<IssueDetailPage />} />
             <Route path="/report" element={<ReportPage />} />
+          </Route>
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="moderation" element={<ModerationQueuePage />} />
+            <Route path="issues" element={<AdminIssueManagementPage />} />
+            <Route path="authorities" element={<AdminAuthorityPage />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
+            <Route path="users" element={<AdminUserManagementPage />} />
+            <Route path="audit" element={<AdminAuditLogPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
